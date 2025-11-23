@@ -84,6 +84,9 @@ class PriceRepresentable:
     #  The total traded quantity of the asset during the interval, representing market activity and liquidity.
     volume: float
 
+    # The discrete unit or range within which price movements are measured.
+    interval: PriceInterval
+
 @immutable
 class PriceProviderContext:
     """
@@ -182,7 +185,7 @@ class BinancePriceProvider(PriceProvider):
                 open_time: datetime = milliseconds_to_datatime(int(content[0]))
                 prices.append(PriceRepresentable(
                     symbol=context.symbol, timestamp=open_time, open_price=float(content[1]), high_price=float(content[2]),
-                    low_price=float(content[3]), close_price=float(content[4]), volume=float(content[5])
+                    low_price=float(content[3]), close_price=float(content[4]), volume=float(content[5]), interval=context.interval
                 ))
 
                 # Stop early if we exceed the requested limit
@@ -192,3 +195,4 @@ class BinancePriceProvider(PriceProvider):
             # Advance to the next starting timestamp after the last price in this batch.
             next_start_time = int(contents[-1][6]) + 1
         return sorted(prices, key=lambda price: price.timestamp)
+

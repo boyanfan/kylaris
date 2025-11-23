@@ -81,7 +81,7 @@ def moving_average_convergence_divergence(
     :param prices: A collection of price records standardized into the system’s internal format.
     :param fast_period: Period for the fast EMA, default to be 12.
     :param slow_period: Period for the slow EMA, default to be 6.
-    :param signal_period:  Period for the signal line EMA, default to be 9.
+    :param signal_period: Period for the signal line EMA, default to be 9.
     :return: [0]: a MACD line as the difference between the fast EMA and slow EMA,
              [1]: an EMA of the MACD line,
              [2]: a histogram as the difference between MACD line and signal line.
@@ -114,3 +114,35 @@ def moving_average_convergence_divergence(
 
     return moving_average_line, signal_line, histgram
 
+def average_true_range(prices: Iterable[PriceRepresentable], period: int) -> IndicatorRepresentable:
+    """
+    Average True Range (ATR) is a pure volatility indicator, it does not care about whether price goes up or down,
+    but how much does this market typically move per candle - not the direction, but the size of the movement.
+
+    :param prices: A collection of price records standardized into the system’s internal format.
+    :param period: The number of periods over which to calculate the volatility.
+    :return: ATR values where the first few entries are None due to insufficient data for initialization.
+    """
+    true_range: Sequence[float] = []
+    previous_close_price: Optional[float] = None
+
+    # Compute True Range for each price
+    for price in range(len(prices)):
+        high_price: float = prices[price].high_price
+        low_price: float = prices[price].low_price
+        true_range.append(high_price - low_price if previous_close_price is None else max(
+            high_price - low_price, abs(high_price - previous_close_price), abs(low_price - previous_close_price)
+        ))
+
+        previous_close_price = prices[price].close_price
+
+    # Compute first ATR value
+    results: IndicatorRepresentable = [None] * (period - 1)
+    previous_true_range: float = sum(true_range[0:period]) / period
+    results.append(previous_true_range)
+
+    # Smoothing for subsequent values
+    for value in range(period, len(prices)):
+        previous_true_range = (previous_true_range * (period - 1) + true_range[value]) / period
+        results.append(previous_true_range)
+    return results
